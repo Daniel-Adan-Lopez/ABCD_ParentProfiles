@@ -1,0 +1,46 @@
+# Install and load the necessary package for polychoric correlations
+if (!require(psych)) install.packages("psych")  # Install if not already installed
+library(psych)  # Load psych package for polychoric correlations
+
+# Define PSQ items (ordinal Likert-type survey items)
+psq_items <- c("PSQ_Q1", "PSQ_Q2", "PSQ_Q3", "PSQ_Q4", "PSQ_Q5",
+               "PSQ_Q6", "PSQ_Q7", "PSQ_Q8", "PSQ_Q9", "PSQ_Q10",
+               "PSQ_Q11", "PSQ_Q12", "PSQ_Q13", "PSQ_Q14")
+
+# Compute the polychoric correlation matrix
+# Polychoric correlations are recommended for ordinal (Likert-type) data
+poly_cor_matrix <- polychoric(data_6_0_STQ_full2[, psq_items])$rho  
+
+# Define human-readable labels for PSQ items (shortened for visualization)
+psq_labels <- c(
+  "Parent Uses Screens", "Limits Own Use", "Screens at Meals",
+  "Allowed at Meals", "Sleeps with Screen", "Screen On at Bedtime",
+  "Mobile in Bed", "Reward with Screen", "Punish with Screen",
+  "Tracks Use (Weekdays)", "Tracks Use (Weekends)", 
+  "Limits Use (Weekdays)", "Limits Use (Weekends)", 
+  "Encourages Non-Screen"
+)
+
+# Rename row and column names of the correlation matrix with short labels
+rownames(poly_cor_matrix) <- psq_labels
+colnames(poly_cor_matrix) <- psq_labels
+
+# Load ggcorrplot for visualization (install if not already installed)
+if (!require(ggcorrplot)) install.packages("ggcorrplot")  
+library(ggcorrplot)  
+
+# Create a correlation heatmap using ggcorrplot
+ggcorrplot(poly_cor_matrix, 
+           lab = TRUE,  # Display correlation values
+           colors = c("blue", "white", "darkred"),  # Color scheme for correlations
+           title = "PSQ Item Correlation Matrix",  # Chart title
+           lab_size = 4,  # Size of text labels inside the plot
+           tl.cex = 12,  # Text size for axis labels
+           tl.srt = 45,  # Rotate axis labels for readability
+           tl.col = "black",  # Set axis label color
+           type = "lower") +  # Show only lower triangle of correlation matrix
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 14),  # Rotate x-axis labels
+        axis.text.y = element_text(size = 14),  # Increase y-axis text size
+        panel.grid.major = element_blank(),  # Remove major gridlines
+        panel.grid.minor = element_blank(),  # Remove minor gridlines
+        panel.background = element_blank())  # Remove background for a cleaner look
