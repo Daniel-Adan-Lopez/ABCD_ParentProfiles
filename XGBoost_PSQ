@@ -1,0 +1,164 @@
+#####
+# Load necessary libraries
+library(xgboost)
+library(dplyr)
+library(caret)
+library(ggplot2)
+library(forcats)
+
+# Subset relevant columns from the dataset
+data_subset <- data_6_0_STQ_full2 %>%
+  select(participant_id, screentime_total_combined, 
+         PSQ_Q1, PSQ_Q2, PSQ_Q3, PSQ_Q4, PSQ_Q5,
+         PSQ_Q6, PSQ_Q7, PSQ_Q8, PSQ_Q9, PSQ_Q10,
+         PSQ_Q11, PSQ_Q12, PSQ_Q13, PSQ_Q14, visit, ab_g_stc__design_id__fam)
+
+# Display dataset summary
+cat("Number of participants:", length(unique(data_subset$participant_id)), "\n")
+cat("Number of observations:", nrow(data_subset), "\n")
+
+set.seed(123)  # Ensure reproducibility
+
+#####
+# Data Splitting: Cluster by Family ID to prevent data leakage
+# Get unique family IDs
+unique_families <- unique(data_subset$ab_g_stc__design_id__fam)
+
+# Split families into 80% training, 20% testing
+train_families <- sample(unique_families, size = floor(0.8 * length(unique_families)))
+
+# Assign all time points of each family to either training or testing
+train_data <- data_subset %>% filter(ab_g_stc__design_id__fam %in% train_families)
+test_data  <- data_subset %>% filter(!ab_g_stc__design_id__fam %in% train_families)
+
+# Remove rows with missing outcome data (ensuring model does not train on NA labels)
+train_data <- train_data %>% filter(!is.na(screentime_total_combined))
+test_data <- test_data %>% filter(!is.na(screentime_total_combined))
+
+# Display train-test split summary
+cat("Training set:", nrow(train_data), "observations from", length(unique(train_data$participant_id)), "participants\n")
+cat("Testing set:", nrow(test_data), "observations from", length(unique(test_data$participant_id)), "participants\n")
+
+#####
+# Define predictor variables
+predictors <- c("PSQ_Q1", "PSQ_Q2", "PSQ_Q3", "PSQ_Q4", "PSQ_Q5", 
+                "PSQ_Q6", "PSQ_Q7", "PSQ_Q8", "PSQ_Q9", "PSQ_Q10",
+                "PSQ_Q11", "PSQ_Q12", "PSQ_Q13", "PSQ_Q14", "visit")
+
+# Convert PSQ variables to numeric
+train_data <- train_data %>% mutate(across(all_of(predictors), as.numeric))
+test_data <- test_data %>% mutate(across(all_of(predictors), as.numeric))
+test_data$visit <- as.numeric(as.factor(test_data$visit))  # Ensure visit is numeric
+
+#####
+# Convert training & test data into XGBoost DMatrix format
+dtrain <- xgb.DMatrix(data = as.matrix(train_data[, predictors]), 
+                      label = train_data$screentime_total_combined,
+                      missing = NA)  # Ensure missing values are handled properly
+
+dtest <- xgb.DMatrix(data = as.matrix(test_data[, predictors]), 
+                     label = test_data$screentime_total_combined,
+                     missing = NA)  
+
+#####
+# Hyperparameter Tuning using Caret's train() function
+control <- trainControl(
+  method = "cv",      # Cross-validation
+  number = 5,         # 5-fold CV
+  verboseIter = TRUE, # Show progress
+  search = "random",  # Use random search instead of grid search for efficiency
+  allowParallel = TRUE  # Enable parallel computing
+)
+
+# Define search space for hyperparameter tuning
+grid <- expand.grid(
+  nrounds = seq(100, 500, by = 100),  
+  max_depth = seq(3, 9, by = 2),      
+  eta = seq(0.01, 0.3, by = 0.05),    
+  gamma = seq(0, 0.5, by = 0.1),      
+  colsample_bytree = seq(0.6, 1, by = 0.1),  
+  min_child_weight = seq(1, 10, by = 2),     
+  subsample = seq(0.6, 1, by = 0.1)  
+)
+
+# Train model using random search for hyperparameters
+tuned_xgb <- train(
+  screentime_total_combined ~ .,
+  data = train_data,  
+  method = "xgbTree",
+  trControl = control,
+  tuneLength = 10,  # Try 10 random combinations
+  na.action = na.pass  # Allow missing values in predictors    
+)
+
+# Print the best hyperparameters
+print(tuned_xgb$bestTune)
+
+#####
+# Define XGBoost parameters using bestTune results
+params <- list(
+  booster = "gbtree",
+  objective = "reg:squarederror",  
+  eta = tuned_xgb$bestTune$eta,  
+  max_depth = tuned_xgb$bestTune$max_depth,  
+  subsample = tuned_xgb$bestTune$subsample,  
+  colsample_bytree = tuned_xgb$bestTune$colsample_bytree,  
+  gamma = tuned_xgb$bestTune$gamma,  
+  min_child_weight = tuned_xgb$bestTune$min_child_weight
+)
+
+# Train final XGBoost model
+xgb_model <- xgb.train(
+  params = params,
+  data = dtrain,
+  nrounds = tuned_xgb$bestTune$nrounds,  
+  watchlist = list(train = dtrain, test = dtest),
+  early_stopping_rounds = 10,
+  print_every_n = 10
+)
+
+#####
+# Evaluate Model Performance
+test_predictions <- predict(xgb_model, dtest)
+actuals <- test_data$screentime_total_combined
+
+# Compute R²
+r_squared <- 1 - (sum((actuals - test_predictions)^2) / sum((actuals - mean(actuals))^2))
+cat("Test R²:", round(r_squared, 4), "\n")
+
+# Compute RMSE
+rmse <- sqrt(mean((actuals - test_predictions)^2))
+cat("Test RMSE:", round(rmse, 4), "\n")
+
+# Compute MAE
+mae <- mean(abs(actuals - test_predictions))
+cat("Test MAE:", round(mae, 4), "\n")
+
+#####
+# Variable Importance
+importance_matrix <- xgb.importance(feature_names = predictors, model = xgb_model)
+print(importance_matrix)
+
+importance_df <- as.data.frame(importance_matrix)
+colnames(importance_df)[1] <- "Variable"
+
+# Variable Importance Figure
+ggplot(importance_df) +
+  geom_col(
+    aes(y = fct_reorder(Variable, Gain),  
+        x = Gain),
+    fill = 'darkgreen', 
+    alpha = 0.5, 
+    color = 'black'
+  ) +
+  labs(
+    title = 'Variable Importance and Self-Reported Total Screen Time (XGBoost)', 
+    x = 'Importance (Gain)',
+    y = NULL
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(size = 11), 
+    axis.text.y = element_text(size = 13),
+    plot.title = element_text(size = 14)
+  )
