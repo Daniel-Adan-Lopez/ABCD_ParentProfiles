@@ -1,0 +1,210 @@
+#library(tidyverse)
+#library(MplusAutomation)
+
+#creating a numeric_id variable that can help map each particpant from Mplus back to R
+
+# Assume original_data is your original dataframe with character src_subject_id
+data_6_0_STQ_full2$numeric_id <- as.numeric(as.factor(data_6_0_STQ_full2$participant_id))
+
+#just making sure there are no duplicates
+id_mapping_check <- data_6_0_STQ_full2 %>%
+  distinct(participant_id, numeric_id) %>%
+  group_by(numeric_id) %>%
+  filter(n() > 1)
+#returns 0
+
+# Check if each participant_id has consistent family IDs across rows
+inconsistent_families <- data_6_0_STQ_full2 %>%
+  group_by(participant_id) %>%
+  summarize(unique_fam_ids = n_distinct(ab_g_stc__design_id__fam)) %>%
+  filter(unique_fam_ids > 1)
+
+View(inconsistent_families)  # Participants with multiple family IDs
+
+
+# Deduplicate by participant_id before creating numeric_id
+unique_participants <- data_6_0_STQ_full2 %>%
+  distinct(participant_id) %>%
+  arrange(participant_id) %>%
+  mutate(numeric_id = row_number())
+# 8359
+# # Merge numeric_id back into the long dataset
+# data_6_0_STQ <- data_6_0_STQ %>%
+#   left_join(unique_participants, by = "participant_id")
+
+
+
+
+
+# Create a mapping dataframe
+id_mapping <- data.frame(numeric_id = data_6_0_STQ_full2$numeric_id, participant_id = data_6_0_STQ_full2$participant_id, eventname = data_6_0_STQ_full2$eventname,
+                         family_id = data_6_0_STQ_full2$ab_g_stc__design_id__fam)
+
+# View the mapping
+head(id_mapping)
+
+
+
+
+
+# Check for exact duplicates in the long dataset
+exact_duplicates <- data_6_0_STQ_full2 %>%
+  group_by(participant_id, eventname) %>%
+  filter(n() > 1)
+
+View(exact_duplicates)  # Rows that are exact duplicates
+#0 duplicates
+
+# Remove exact duplicates
+data_6_0_STQ_full2 <- data_6_0_STQ_full2 %>%
+  distinct()
+
+# Check for exact duplicates in the long dataset
+exact_duplicates <- data_6_0_STQ_full2 %>%
+  group_by(participant_id, eventname) %>%
+  filter(n() > 1)
+
+
+#mplus
+#take only the variables I will need for the LTA
+Mplus <- data_6_0_STQ_full2[,c("participant_id","numeric_id", "eventname", "visit", "ab_g_stc__design_id__fam", "PSQ_Q1", "PSQ_Q2",
+                              "PSQ_Q3", "PSQ_Q4", "PSQ_Q5", "PSQ_Q6", "PSQ_Q7", "PSQ_Q8", "PSQ_Q9", "PSQ_Q10",
+                              "PSQ_Q11", "PSQ_Q12", "PSQ_Q13", "PSQ_Q14")]
+
+
+
+# Retain only participants with all three visits
+Mplus <- Mplus %>%
+  filter(participant_id %in% data_6_0_STQ_full2$participant_id)
+
+# Remove exact duplicates
+Mplus <- Mplus %>%
+  distinct()
+
+# Check the number of participants and visits
+table(Mplus$visit)
+length(unique(Mplus$participant_id))
+#8359
+
+
+Mplus_PSQ1 <- pivot_wider(
+  Mplus,
+  values_from= -c(numeric_id, ab_g_stc__design_id__fam),
+  names_sep="_",
+  names_from=visit
+)
+
+prepareMplusData(Mplus_PSQ1, "Mplus_PSQ1.dat")
+##################################################
+
+  
+###########
+unique_mapping_1 <- data_6_0_STQ %>% distinct(participant_id, numeric_id)
+unique_mapping_2 <- Mplus %>% distinct(participant_id, numeric_id)
+anti_join(unique_mapping_1, unique_mapping_2, by = "participant_id")
+
+##################################
+
+#let's try to get the variables over from Mplus 
+#Class 1 is the high restriction group
+#Class 2 is the moderate restriction group
+#Class 3 is the low restriction group 
+
+
+
+#here let's do just the EARS Year 4 - updated version 
+# Set the working directory to where your .dat file is located, if necessary
+# setwd("path/to/your/directory")
+
+# Load the .dat file
+lta_results <- read.table("lta_cat_PSQY345_6_0TEST2.dat", header = FALSE)
+
+# View the first few rows to inspect the data
+head(lta_results)
+
+PSQ_LTA <- lta_results[,c("V70", "V71", "V72", "V73", "V74", "V75")]
+
+colnames(PSQ_LTA) <- c("W1", "W2", "W3", "MLCJOINT", "numeric_id", "ab_g_stc__design_id__fam")
+
+
+
+# View the first few rows to confirm the column names
+head(PSQ_LTA)
+
+
+
+# Pivot to long format
+lta_results_long <- PSQ_LTA %>%
+  pivot_longer(
+    cols = c(W1, W2, W3),  # Only pivot the C1, C2, C3 columns
+    names_to = "eventname",  # Name for the column that holds "C1", "C2", "C3"
+    values_to = "class_membership"  # Name for the column with class membership values
+  ) %>%
+  # Update "time_point" values to meaningful labels
+  mutate(eventname = recode(eventname, "W1" = "3 Year Follow-Up", "W2" = "4 Year Follow-Up", "W3" = "5 Year Follow-Up"))
+
+table(PSQ_LTA$W1)
+#1    2    3 
+#3899 3247 1203  
+
+table(PSQ_LTA$W2)
+#1    2    3 
+#2924 3357 2068 
+
+table(PSQ_LTA$W3)
+#1    2    3 
+#2096 3245 3008 
+
+
+# Merge the lpa_results with the id_mapping to get original src_subject_id
+lta_results_2 <- merge(lta_results_long, id_mapping, by = c("numeric_id", "eventname"))
+head(lta_results_2)
+
+#all(lta_results_2$participant_id.x == lta_results_2$participant_id.y, na.rm = TRUE)
+#all(lta_results_2$family_id.x == lta_results_2$family_id.y, na.rm = TRUE)
+
+#lta_results_2 <- lta_results_2 %>%
+#  select(-participant_id.y, -family_id.y) %>%
+#  rename(participant_id = participant_id.x, family_id = family_id.x)
+
+# # Remove duplicates based on both src_subject_id and numeric_id
+# lta_results_unique <- lta_results_2 %>%
+# distinct(participant_id, numeric_id, .keep_all = TRUE)
+#8349 obs
+
+#sum(duplicated(data_6_0_STQ[, c("participant_id", "eventname")]))
+#0
+
+lta_results_2 <- lta_results_2[,c("participant_id", "eventname", "class_membership")]
+ 
+
+data_6_0_STQ_full3 <-  merge(data_6_0_STQ_full2, lta_results_2,
+                       all.x =TRUE, by=c("participant_id", "eventname"))
+
+table(data_6_0_STQ_full3$eventname, data_6_0_STQ_full3$class_membership, useNA = "always")
+#                    1    2    3 <NA>
+# 3 Year Follow-Up 3899 3247 1203   10
+# 4 Year Follow-Up 2924 3357 2068   10
+# 5 Year Follow-Up 2096 3245 3008   10
+
+
+#data_6_0_STQ <- data_6_0_STQ[!duplicated(data_6_0_STQ[, c("participant_id", "eventname")]), ]
+
+#table(data_6_0_STQ$eventname, data_6_0_STQ$class_restriction)
+
+
+
+# Create a new factor variable for class membership
+data_6_0_STQ_full3$class_restriction <- factor(
+  data_6_0_STQ_full3$class_membership,
+  levels = c(1, 2, 3),
+  labels = c("High Restriction", "Moderate Restriction", "Low Restriction")
+)
+
+# Verify the new variable
+table(data_6_0_STQ_full3$eventname, data_6_0_STQ_full3$class_restriction)
+table(data_6_0_STQ_full3$eventname, data_6_0_STQ_full3$class_membership)
+
+#data_6_0_STQ <-  merge(data_6_0_STQ, lta_results_2,
+#                        all.x =TRUE, by=c("participant_id", "eventname"))
+saveRDS(data_6_0_STQ_full3, "data_6_0_STQ_full3.RDS")
