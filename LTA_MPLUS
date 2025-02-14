@@ -1,0 +1,223 @@
+#Note. MPLUS_PSQ1 was created in R and transformed using Mplus Automation
+TITLE: Longitudinal Latent Transition Analysis of Digital Parenting Practices at year 3, 4, and 5;
+DATA: FILE = "C:\Users\indoo\Desktop\Mplus_PSQ1.dat";
+
+VARIABLE: 
+NAMES =  numeric_id ab_g_stc__design_id__fam participant_id_1 participant_id_2
+     participant_id_3 eventname_1 eventname_2 eventname_3 visit_1 visit_2 visit_3
+     PSQ_Q1_1 PSQ_Q1_2 PSQ_Q1_3 PSQ_Q2_1 PSQ_Q2_2 PSQ_Q2_3 PSQ_Q3_1 PSQ_Q3_2
+     PSQ_Q3_3 PSQ_Q4_1 PSQ_Q4_2 PSQ_Q4_3 PSQ_Q5_1 PSQ_Q5_2 PSQ_Q5_3 PSQ_Q6_1
+     PSQ_Q6_2 PSQ_Q6_3 PSQ_Q7_1 PSQ_Q7_2 PSQ_Q7_3 PSQ_Q8_1 PSQ_Q8_2 PSQ_Q8_3
+     PSQ_Q9_1 PSQ_Q9_2 PSQ_Q9_3 PSQ_Q10_1 PSQ_Q10_2 PSQ_Q10_3 PSQ_Q11_1 PSQ_Q11_2
+     PSQ_Q11_3 PSQ_Q12_1 PSQ_Q12_2 PSQ_Q12_3 PSQ_Q13_1 PSQ_Q13_2 PSQ_Q13_3 PSQ_Q14_1
+     PSQ_Q14_2 PSQ_Q14_3;
+
+      USEVARIABLES ARE 
+     PSQ_Q1_1 PSQ_Q1_2 PSQ_Q1_3 PSQ_Q2_1 PSQ_Q2_2 PSQ_Q2_3 PSQ_Q3_1 PSQ_Q3_2
+     PSQ_Q3_3 PSQ_Q4_1 PSQ_Q4_2 PSQ_Q4_3 PSQ_Q5_1 PSQ_Q5_2 PSQ_Q5_3 PSQ_Q6_1
+     PSQ_Q6_2 PSQ_Q6_3 PSQ_Q7_1 PSQ_Q7_2 PSQ_Q7_3 PSQ_Q8_1 PSQ_Q8_2 PSQ_Q8_3
+     PSQ_Q9_1 PSQ_Q9_2 PSQ_Q9_3 PSQ_Q10_1 PSQ_Q10_2 PSQ_Q10_3 PSQ_Q11_1 PSQ_Q11_2
+     PSQ_Q11_3 PSQ_Q12_1 PSQ_Q12_2 PSQ_Q12_3 PSQ_Q13_1 PSQ_Q13_2 PSQ_Q13_3 PSQ_Q14_1
+     PSQ_Q14_2 PSQ_Q14_3;
+
+  CATEGORICAL ARE
+     PSQ_Q1_1 PSQ_Q1_2 PSQ_Q1_3 PSQ_Q2_1 PSQ_Q2_2 PSQ_Q2_3 PSQ_Q3_1 PSQ_Q3_2
+     PSQ_Q3_3 PSQ_Q4_1 PSQ_Q4_2 PSQ_Q4_3 PSQ_Q5_1 PSQ_Q5_2 PSQ_Q5_3 PSQ_Q6_1
+     PSQ_Q6_2 PSQ_Q6_3 PSQ_Q7_1 PSQ_Q7_2 PSQ_Q7_3 PSQ_Q8_1 PSQ_Q8_2 PSQ_Q8_3
+     PSQ_Q9_1 PSQ_Q9_2 PSQ_Q9_3 PSQ_Q10_1 PSQ_Q10_2 PSQ_Q10_3 PSQ_Q11_1 PSQ_Q11_2
+     PSQ_Q11_3 PSQ_Q12_1 PSQ_Q12_2 PSQ_Q12_3 PSQ_Q13_1 PSQ_Q13_2 PSQ_Q13_3 PSQ_Q14_1
+     PSQ_Q14_2 PSQ_Q14_3;
+        
+
+
+  IDVARIABLE = numeric_id;
+  CLASSES = W1(3) W2(3) W3(3);  !3 classes at each time point
+  CLUSTER = ab_g_stc__design_id__fam;
+ 
+
+  MISSING = .;
+  
+ANALYSIS:
+  TYPE = MIXTURE COMPLEX;  ! LTA model, adjusts for clustering within families
+  ESTIMATOR = MLR;
+  STARTS = 500 100; ! Increase starts to explore more initial solutions 200 50 for high
+  PROCESS = 8 (STARTS);
+  STITERATIONS = 10; !10 for high
+  PROCESSORS = 10;
+  ALGORITHM=EM;
+  !INTEGRATION = MONTECARLO;  ! Increase integration points if necessary to 10
+
+
+MODEL:
+  %OVERALL%
+    W2 ON W1;  ! Transition from Year 3 to Year 4
+    W3 ON W2;  ! Transition from Year 4 to Year 5
+    W3 ON W1;
+
+ 
+!setting conditional response probabilities equal across time
+!To modify the syntax to account for categorical indicators with 
+!4 levels instead of binary variables, you need to include all the thresholds for each indicator.
+MODEL W1:
+  %W1#1% 
+  [PSQ_Q1_1$1] (t1);  [PSQ_Q1_1$2] (t2);  [PSQ_Q1_1$3] (t3);
+    [PSQ_Q2_1$1] (t4);  [PSQ_Q2_1$2] (t5);  [PSQ_Q2_1$3] (t6);
+    [PSQ_Q3_1$1] (t7);  [PSQ_Q3_1$2] (t8);  [PSQ_Q3_1$3] (t9);
+    [PSQ_Q4_1$1] (t10); [PSQ_Q4_1$2] (t11); [PSQ_Q4_1$3] (t12);
+    [PSQ_Q5_1$1] (t13); [PSQ_Q5_1$2] (t14); [PSQ_Q5_1$3] (t15);
+    [PSQ_Q6_1$1] (t16); [PSQ_Q6_1$2] (t17); [PSQ_Q6_1$3] (t18);
+    [PSQ_Q7_1$1] (t19); [PSQ_Q7_1$2] (t20); [PSQ_Q7_1$3] (t21);
+    [PSQ_Q8_1$1] (t22); [PSQ_Q8_1$2] (t23); [PSQ_Q8_1$3] (t24);
+    [PSQ_Q9_1$1] (t25); [PSQ_Q9_1$2] (t26); [PSQ_Q9_1$3] (t27);
+    [PSQ_Q10_1$1] (t28); [PSQ_Q10_1$2] (t29); [PSQ_Q10_1$3] (t30);
+    [PSQ_Q11_1$1] (t31); [PSQ_Q11_1$2] (t32); [PSQ_Q11_1$3] (t33);
+    [PSQ_Q12_1$1] (t34); [PSQ_Q12_1$2] (t35); [PSQ_Q12_1$3] (t36);
+    [PSQ_Q13_1$1] (t37); [PSQ_Q13_1$2] (t38); [PSQ_Q13_1$3] (t39);
+    [PSQ_Q14_1$1] (t40); [PSQ_Q14_1$2] (t41); [PSQ_Q14_1$3] (t42);
+  %W1#2%
+  [PSQ_Q1_1$1] (t43); [PSQ_Q1_1$2] (t44); [PSQ_Q1_1$3] (t45);
+    [PSQ_Q2_1$1] (t46); [PSQ_Q2_1$2] (t47); [PSQ_Q2_1$3] (t48);
+    [PSQ_Q3_1$1] (t49); [PSQ_Q3_1$2] (t50); [PSQ_Q3_1$3] (t51);
+    [PSQ_Q4_1$1] (t52); [PSQ_Q4_1$2] (t53); [PSQ_Q4_1$3] (t54);
+    [PSQ_Q5_1$1] (t55); [PSQ_Q5_1$2] (t56); [PSQ_Q5_1$3] (t57);
+    [PSQ_Q6_1$1] (t58); [PSQ_Q6_1$2] (t59); [PSQ_Q6_1$3] (t60);
+    [PSQ_Q7_1$1] (t61); [PSQ_Q7_1$2] (t62); [PSQ_Q7_1$3] (t63);
+    [PSQ_Q8_1$1] (t64); [PSQ_Q8_1$2] (t65); [PSQ_Q8_1$3] (t66);
+    [PSQ_Q9_1$1] (t67); [PSQ_Q9_1$2] (t68); [PSQ_Q9_1$3] (t69);
+    [PSQ_Q10_1$1] (t70); [PSQ_Q10_1$2] (t71); [PSQ_Q10_1$3] (t72);
+    [PSQ_Q11_1$1] (t73); [PSQ_Q11_1$2] (t74); [PSQ_Q11_1$3] (t75);
+    [PSQ_Q12_1$1] (t76); [PSQ_Q12_1$2] (t77); [PSQ_Q12_1$3] (t78);
+    [PSQ_Q13_1$1] (t79); [PSQ_Q13_1$2] (t80); [PSQ_Q13_1$3] (t81);
+    [PSQ_Q14_1$1] (t82); [PSQ_Q14_1$2] (t83); [PSQ_Q14_1$3] (t84);
+
+%W1#3%
+  [PSQ_Q1_1$1] (t85); [PSQ_Q1_1$2] (t86); [PSQ_Q1_1$3] (t87);
+  [PSQ_Q2_1$1] (t88); [PSQ_Q2_1$2] (t89); [PSQ_Q2_1$3] (t90);
+  [PSQ_Q3_1$1] (t91); [PSQ_Q3_1$2] (t92); [PSQ_Q3_1$3] (t93);
+  [PSQ_Q4_1$1] (t94); [PSQ_Q4_1$2] (t95); [PSQ_Q4_1$3] (t96);
+  [PSQ_Q5_1$1] (t97); [PSQ_Q5_1$2] (t98); [PSQ_Q5_1$3] (t99);
+  [PSQ_Q6_1$1] (t100); [PSQ_Q6_1$2] (t101); [PSQ_Q6_1$3] (t102);
+  [PSQ_Q7_1$1] (t103); [PSQ_Q7_1$2] (t104); [PSQ_Q7_1$3] (t105);
+  [PSQ_Q8_1$1] (t106); [PSQ_Q8_1$2] (t107); [PSQ_Q8_1$3] (t108);
+  [PSQ_Q9_1$1] (t109); [PSQ_Q9_1$2] (t110); [PSQ_Q9_1$3] (t111);
+  [PSQ_Q10_1$1] (t112); [PSQ_Q10_1$2] (t113); [PSQ_Q10_1$3] (t114);
+  [PSQ_Q11_1$1] (t115); [PSQ_Q11_1$2] (t116); [PSQ_Q11_1$3] (t117);
+  [PSQ_Q12_1$1] (t118); [PSQ_Q12_1$2] (t119); [PSQ_Q12_1$3] (t120);
+  [PSQ_Q13_1$1] (t121); [PSQ_Q13_1$2] (t122); [PSQ_Q13_1$3] (t123);
+  [PSQ_Q14_1$1] (t124); [PSQ_Q14_1$2] (t125); [PSQ_Q14_1$3] (t126);
+
+  
+!latent class variable for time 2
+MODEL W2:
+  %W2#1%
+    [PSQ_Q1_2$1] (t1);  [PSQ_Q1_2$2] (t2);  [PSQ_Q1_2$3] (t3);
+    [PSQ_Q2_2$1] (t4);  [PSQ_Q2_2$2] (t5);  [PSQ_Q2_2$3] (t6);
+    [PSQ_Q3_2$1] (t7);  [PSQ_Q3_2$2] (t8);  [PSQ_Q3_2$3] (t9);
+    [PSQ_Q4_2$1] (t10); [PSQ_Q4_2$2] (t11); [PSQ_Q4_2$3] (t12);
+    [PSQ_Q5_2$1] (t13); [PSQ_Q5_2$2] (t14); [PSQ_Q5_2$3] (t15);
+    [PSQ_Q6_2$1] (t16); [PSQ_Q6_2$2] (t17); [PSQ_Q6_2$3] (t18);
+    [PSQ_Q7_2$1] (t19); [PSQ_Q7_2$2] (t20); [PSQ_Q7_2$3] (t21);
+    [PSQ_Q8_2$1] (t22); [PSQ_Q8_2$2] (t23); [PSQ_Q8_2$3] (t24);
+    [PSQ_Q9_2$1] (t25); [PSQ_Q9_2$2] (t26); [PSQ_Q9_2$3] (t27);
+    [PSQ_Q10_2$1] (t28); [PSQ_Q10_2$2] (t29); [PSQ_Q10_2$3] (t30);
+    [PSQ_Q11_2$1] (t31); [PSQ_Q11_2$2] (t32); [PSQ_Q11_2$3] (t33);
+    [PSQ_Q12_2$1] (t34); [PSQ_Q12_2$2] (t35); [PSQ_Q12_2$3] (t36);
+    [PSQ_Q13_2$1] (t37); [PSQ_Q13_2$2] (t38); [PSQ_Q13_2$3] (t39);
+    [PSQ_Q14_2$1] (t40); [PSQ_Q14_2$2] (t41); [PSQ_Q14_2$3] (t42);
+
+  %W2#2%
+    [PSQ_Q1_2$1] (t43); [PSQ_Q1_2$2] (t44); [PSQ_Q1_2$3] (t45);
+    [PSQ_Q2_2$1] (t46); [PSQ_Q2_2$2] (t47); [PSQ_Q2_2$3] (t48);
+    [PSQ_Q3_2$1] (t49); [PSQ_Q3_2$2] (t50); [PSQ_Q3_2$3] (t51);
+    [PSQ_Q4_2$1] (t52); [PSQ_Q4_2$2] (t53); [PSQ_Q4_2$3] (t54);
+    [PSQ_Q5_2$1] (t55); [PSQ_Q5_2$2] (t56); [PSQ_Q5_2$3] (t57);
+    [PSQ_Q6_2$1] (t58); [PSQ_Q6_2$2] (t59); [PSQ_Q6_2$3] (t60);
+    [PSQ_Q7_2$1] (t61); [PSQ_Q7_2$2] (t62); [PSQ_Q7_2$3] (t63);
+    [PSQ_Q8_2$1] (t64); [PSQ_Q8_2$2] (t65); [PSQ_Q8_2$3] (t66);
+    [PSQ_Q9_2$1] (t67); [PSQ_Q9_2$2] (t68); [PSQ_Q9_2$3] (t69);
+    [PSQ_Q10_2$1] (t70); [PSQ_Q10_2$2] (t71); [PSQ_Q10_2$3] (t72);
+    [PSQ_Q11_2$1] (t73); [PSQ_Q11_2$2] (t74); [PSQ_Q11_2$3] (t75);
+    [PSQ_Q12_2$1] (t76); [PSQ_Q12_2$2] (t77); [PSQ_Q12_2$3] (t78);
+    [PSQ_Q13_2$1] (t79); [PSQ_Q13_2$2] (t80); [PSQ_Q13_2$3] (t81);
+    [PSQ_Q14_2$1] (t82); [PSQ_Q14_2$2] (t83); [PSQ_Q14_2$3] (t84);
+
+%W2#3%
+  [PSQ_Q1_2$1] (t85); [PSQ_Q1_2$2] (t86); [PSQ_Q1_2$3] (t87);
+  [PSQ_Q2_2$1] (t88); [PSQ_Q2_2$2] (t89); [PSQ_Q2_2$3] (t90);
+  [PSQ_Q3_2$1] (t91); [PSQ_Q3_2$2] (t92); [PSQ_Q3_2$3] (t93);
+  [PSQ_Q4_2$1] (t94); [PSQ_Q4_2$2] (t95); [PSQ_Q4_2$3] (t96);
+  [PSQ_Q5_2$1] (t97); [PSQ_Q5_2$2] (t98); [PSQ_Q5_2$3] (t99);
+  [PSQ_Q6_2$1] (t100); [PSQ_Q6_2$2] (t101); [PSQ_Q6_2$3] (t102);
+  [PSQ_Q7_2$1] (t103); [PSQ_Q7_2$2] (t104); [PSQ_Q7_2$3] (t105);
+  [PSQ_Q8_2$1] (t106); [PSQ_Q8_2$2] (t107); [PSQ_Q8_2$3] (t108);
+  [PSQ_Q9_2$1] (t109); [PSQ_Q9_2$2] (t110); [PSQ_Q9_2$3] (t111);
+  [PSQ_Q10_2$1] (t112); [PSQ_Q10_2$2] (t113); [PSQ_Q10_2$3] (t114);
+  [PSQ_Q11_2$1] (t115); [PSQ_Q11_2$2] (t116); [PSQ_Q11_2$3] (t117);
+  [PSQ_Q12_2$1] (t118); [PSQ_Q12_2$2] (t119); [PSQ_Q12_2$3] (t120);
+  [PSQ_Q13_2$1] (t121); [PSQ_Q13_2$2] (t122); [PSQ_Q13_2$3] (t123);
+  [PSQ_Q14_2$1] (t124); [PSQ_Q14_2$2] (t125); [PSQ_Q14_2$3] (t126);
+
+
+
+MODEL W3:
+  %W3#1%
+    [PSQ_Q1_3$1] (t1);  [PSQ_Q1_3$2] (t2);  [PSQ_Q1_3$3] (t3);
+    [PSQ_Q2_3$1] (t4);  [PSQ_Q2_3$2] (t5);  [PSQ_Q2_3$3] (t6);
+    [PSQ_Q3_3$1] (t7);  [PSQ_Q3_3$2] (t8);  [PSQ_Q3_3$3] (t9);
+    [PSQ_Q4_3$1] (t10); [PSQ_Q4_3$2] (t11); [PSQ_Q4_3$3] (t12);
+    [PSQ_Q5_3$1] (t13); [PSQ_Q5_3$2] (t14); [PSQ_Q5_3$3] (t15);
+    [PSQ_Q6_3$1] (t16); [PSQ_Q6_3$2] (t17); [PSQ_Q6_3$3] (t18);
+    [PSQ_Q7_3$1] (t19); [PSQ_Q7_3$2] (t20); [PSQ_Q7_3$3] (t21);
+    [PSQ_Q8_3$1] (t22); [PSQ_Q8_3$2] (t23); [PSQ_Q8_3$3] (t24);
+    [PSQ_Q9_3$1] (t25); [PSQ_Q9_3$2] (t26); [PSQ_Q9_3$3] (t27);
+    [PSQ_Q10_3$1] (t28); [PSQ_Q10_3$2] (t29); [PSQ_Q10_3$3] (t30);
+    [PSQ_Q11_3$1] (t31); [PSQ_Q11_3$2] (t32); [PSQ_Q11_3$3] (t33);
+    [PSQ_Q12_3$1] (t34); [PSQ_Q12_3$2] (t35); [PSQ_Q12_3$3] (t36);
+    [PSQ_Q13_3$1] (t37); [PSQ_Q13_3$2] (t38); [PSQ_Q13_3$3] (t39);
+    [PSQ_Q14_3$1] (t40); [PSQ_Q14_3$2] (t41); [PSQ_Q14_3$3] (t42);
+
+  %W3#2%
+    [PSQ_Q1_3$1] (t43); [PSQ_Q1_3$2] (t44); [PSQ_Q1_3$3] (t45);
+    [PSQ_Q2_3$1] (t46); [PSQ_Q2_3$2] (t47); [PSQ_Q2_3$3] (t48);
+    [PSQ_Q3_3$1] (t49); [PSQ_Q3_3$2] (t50); [PSQ_Q3_3$3] (t51);
+    [PSQ_Q4_3$1] (t52); [PSQ_Q4_3$2] (t53); [PSQ_Q4_3$3] (t54);
+    [PSQ_Q5_3$1] (t55); [PSQ_Q5_3$2] (t56); [PSQ_Q5_3$3] (t57);
+    [PSQ_Q6_3$1] (t58); [PSQ_Q6_3$2] (t59); [PSQ_Q6_3$3] (t60);
+    [PSQ_Q7_3$1] (t61); [PSQ_Q7_3$2] (t62); [PSQ_Q7_3$3] (t63);
+    [PSQ_Q8_3$1] (t64); [PSQ_Q8_3$2] (t65); [PSQ_Q8_3$3] (t66);
+    [PSQ_Q9_3$1] (t67); [PSQ_Q9_3$2] (t68); [PSQ_Q9_3$3] (t69);
+    [PSQ_Q10_3$1] (t70); [PSQ_Q10_3$2] (t71); [PSQ_Q10_3$3] (t72);
+    [PSQ_Q11_3$1] (t73); [PSQ_Q11_3$2] (t74); [PSQ_Q11_3$3] (t75);
+    [PSQ_Q12_3$1] (t76); [PSQ_Q12_3$2] (t77); [PSQ_Q12_3$3] (t78);
+    [PSQ_Q13_3$1] (t79); [PSQ_Q13_3$2] (t80); [PSQ_Q13_3$3] (t81);
+    [PSQ_Q14_3$1] (t82); [PSQ_Q14_3$2] (t83); [PSQ_Q14_3$3] (t84);
+
+    %W3#3%
+  [PSQ_Q1_3$1] (t85); [PSQ_Q1_3$2] (t86); [PSQ_Q1_3$3] (t87);
+  [PSQ_Q2_3$1] (t88); [PSQ_Q2_3$2] (t89); [PSQ_Q2_3$3] (t90);
+  [PSQ_Q3_3$1] (t91); [PSQ_Q3_3$2] (t92); [PSQ_Q3_3$3] (t93);
+  [PSQ_Q4_3$1] (t94); [PSQ_Q4_3$2] (t95); [PSQ_Q4_3$3] (t96);
+  [PSQ_Q5_3$1] (t97); [PSQ_Q5_3$2] (t98); [PSQ_Q5_3$3] (t99);
+  [PSQ_Q6_3$1] (t100); [PSQ_Q6_3$2] (t101); [PSQ_Q6_3$3] (t102);
+  [PSQ_Q7_3$1] (t103); [PSQ_Q7_3$2] (t104); [PSQ_Q7_3$3] (t105);
+  [PSQ_Q8_3$1] (t106); [PSQ_Q8_3$2] (t107); [PSQ_Q8_3$3] (t108);
+  [PSQ_Q9_3$1] (t109); [PSQ_Q9_3$2] (t110); [PSQ_Q9_3$3] (t111);
+  [PSQ_Q10_3$1] (t112); [PSQ_Q10_3$2] (t113); [PSQ_Q10_3$3] (t114);
+  [PSQ_Q11_3$1] (t115); [PSQ_Q11_3$2] (t116); [PSQ_Q11_3$3] (t117);
+  [PSQ_Q12_3$1] (t118); [PSQ_Q12_3$2] (t119); [PSQ_Q12_3$3] (t120);
+  [PSQ_Q13_3$1] (t121); [PSQ_Q13_3$2] (t122); [PSQ_Q13_3$3] (t123);
+  [PSQ_Q14_3$1] (t124); [PSQ_Q14_3$2] (t125); [PSQ_Q14_3$3] (t126);
+
+
+
+OUTPUT:
+  SAMPSTAT;
+  TECH1 TECH8 TECH11 TECH10 TECH15;
+  CINTERVAL;
+
+SAVEDATA:
+  FILE = lta_cat_PSQY345_6_0TEST2.dat;
+  SAVE = CPROBABILITIES;
+
+ 
+ 
