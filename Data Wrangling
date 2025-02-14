@@ -30,11 +30,6 @@ unique_participants <- data_6_0_STQ_full2 %>%
 # 8359 unique participants
 
   ##################
-
-
-
-
-
 # Create a mapping dataframe. This is necessary due to the way Mplus renames the participant ID variable.
 id_mapping <- data.frame(numeric_id = data_6_0_STQ_full2$numeric_id, participant_id = data_6_0_STQ_full2$participant_id, eventname = data_6_0_STQ_full2$eventname,
                          family_id = data_6_0_STQ_full2$ab_g_stc__design_id__fam)
@@ -96,8 +91,6 @@ prepareMplusData(Mplus_PSQ1, "Mplus_PSQ1.dat")
 ##################################################
 
 #the next part is to merge everything back into R  
-###########
- 
 
 ##################################
 
@@ -116,14 +109,10 @@ PSQ_LTA <- lta_results[,c("V70", "V71", "V72", "V73", "V74", "V75")]
 
 colnames(PSQ_LTA) <- c("W1", "W2", "W3", "MLCJOINT", "numeric_id", "ab_g_stc__design_id__fam")
 
-
-
 # View the first few rows to confirm the column names
 head(PSQ_LTA)
 
-
-
-# Pivot to long format
+# Pivot to long format so it is compatible with the original dataframe
 lta_results_long <- PSQ_LTA %>%
   pivot_longer(
     cols = c(W1, W2, W3),  # Only pivot the C1, C2, C3 columns
@@ -146,16 +135,9 @@ table(PSQ_LTA$W3)
 #2096 3245 3008 
 
 
-# Merge the lpa_results with the id_mapping to get original src_subject_id
+# Merge the lpa_results with the id_mapping to get the original participant_id
 lta_results_2 <- merge(lta_results_long, id_mapping, by = c("numeric_id", "eventname"))
 head(lta_results_2)
-
-#all(lta_results_2$participant_id.x == lta_results_2$participant_id.y, na.rm = TRUE)
-#all(lta_results_2$family_id.x == lta_results_2$family_id.y, na.rm = TRUE)
-
-#lta_results_2 <- lta_results_2 %>%
-#  select(-participant_id.y, -family_id.y) %>%
-#  rename(participant_id = participant_id.x, family_id = family_id.x)
 
 # # Remove duplicates based on both src_subject_id and numeric_id
 # lta_results_unique <- lta_results_2 %>%
@@ -164,10 +146,9 @@ head(lta_results_2)
 
 #sum(duplicated(data_6_0_STQ[, c("participant_id", "eventname")]))
 #0
-
+#don't need the other variables. Just these three.
 lta_results_2 <- lta_results_2[,c("participant_id", "eventname", "class_membership")]
  
-
 data_6_0_STQ_full3 <-  merge(data_6_0_STQ_full2, lta_results_2,
                        all.x =TRUE, by=c("participant_id", "eventname"))
 
@@ -178,12 +159,7 @@ table(data_6_0_STQ_full3$eventname, data_6_0_STQ_full3$class_membership, useNA =
 # 5 Year Follow-Up 2096 3245 3008   10
 
 
-#data_6_0_STQ <- data_6_0_STQ[!duplicated(data_6_0_STQ[, c("participant_id", "eventname")]), ]
-
-#table(data_6_0_STQ$eventname, data_6_0_STQ$class_restriction)
-
-
-
+#just renaming the variable and labeling each level
 # Create a new factor variable for class membership
 data_6_0_STQ_full3$class_restriction <- factor(
   data_6_0_STQ_full3$class_membership,
@@ -195,6 +171,4 @@ data_6_0_STQ_full3$class_restriction <- factor(
 table(data_6_0_STQ_full3$eventname, data_6_0_STQ_full3$class_restriction)
 table(data_6_0_STQ_full3$eventname, data_6_0_STQ_full3$class_membership)
 
-#data_6_0_STQ <-  merge(data_6_0_STQ, lta_results_2,
-#                        all.x =TRUE, by=c("participant_id", "eventname"))
 saveRDS(data_6_0_STQ_full3, "data_6_0_STQ_full3.RDS")
