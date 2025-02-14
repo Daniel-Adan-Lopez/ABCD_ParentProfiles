@@ -27,23 +27,20 @@ unique_participants <- data_6_0_STQ_full2 %>%
   distinct(participant_id) %>%
   arrange(participant_id) %>%
   mutate(numeric_id = row_number())
-# 8359
-# # Merge numeric_id back into the long dataset
-# data_6_0_STQ <- data_6_0_STQ %>%
-#   left_join(unique_participants, by = "participant_id")
+# 8359 unique participants
+
+  ##################
 
 
 
 
 
-# Create a mapping dataframe
+# Create a mapping dataframe. This is necessary due to the way Mplus renames the participant ID variable.
 id_mapping <- data.frame(numeric_id = data_6_0_STQ_full2$numeric_id, participant_id = data_6_0_STQ_full2$participant_id, eventname = data_6_0_STQ_full2$eventname,
                          family_id = data_6_0_STQ_full2$ab_g_stc__design_id__fam)
 
 # View the mapping
 head(id_mapping)
-
-
 
 
 
@@ -64,15 +61,15 @@ exact_duplicates <- data_6_0_STQ_full2 %>%
   group_by(participant_id, eventname) %>%
   filter(n() > 1)
 
-
+###############################
 #mplus
-#take only the variables I will need for the LTA
+#take only the variables I will need for the Latent Transition Analysis in MPLUS
 Mplus <- data_6_0_STQ_full2[,c("participant_id","numeric_id", "eventname", "visit", "ab_g_stc__design_id__fam", "PSQ_Q1", "PSQ_Q2",
                               "PSQ_Q3", "PSQ_Q4", "PSQ_Q5", "PSQ_Q6", "PSQ_Q7", "PSQ_Q8", "PSQ_Q9", "PSQ_Q10",
                               "PSQ_Q11", "PSQ_Q12", "PSQ_Q13", "PSQ_Q14")]
 
 
-
+####################################
 # Retain only participants with all three visits
 Mplus <- Mplus %>%
   filter(participant_id %in% data_6_0_STQ_full2$participant_id)
@@ -86,7 +83,8 @@ table(Mplus$visit)
 length(unique(Mplus$participant_id))
 #8359
 
-
+#######
+#Mplus requires wide data format
 Mplus_PSQ1 <- pivot_wider(
   Mplus,
   values_from= -c(numeric_id, ab_g_stc__design_id__fam),
@@ -97,11 +95,9 @@ Mplus_PSQ1 <- pivot_wider(
 prepareMplusData(Mplus_PSQ1, "Mplus_PSQ1.dat")
 ##################################################
 
-  
+#the next part is to merge everything back into R  
 ###########
-unique_mapping_1 <- data_6_0_STQ %>% distinct(participant_id, numeric_id)
-unique_mapping_2 <- Mplus %>% distinct(participant_id, numeric_id)
-anti_join(unique_mapping_1, unique_mapping_2, by = "participant_id")
+ 
 
 ##################################
 
@@ -110,13 +106,7 @@ anti_join(unique_mapping_1, unique_mapping_2, by = "participant_id")
 #Class 2 is the moderate restriction group
 #Class 3 is the low restriction group 
 
-
-
-#here let's do just the EARS Year 4 - updated version 
-# Set the working directory to where your .dat file is located, if necessary
-# setwd("path/to/your/directory")
-
-# Load the .dat file
+# Load the .dat file into R
 lta_results <- read.table("lta_cat_PSQY345_6_0TEST2.dat", header = FALSE)
 
 # View the first few rows to inspect the data
