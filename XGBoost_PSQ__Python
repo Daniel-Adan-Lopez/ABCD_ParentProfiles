@@ -146,3 +146,10 @@ print(f"Train R²: {r2_train:.4f}, RMSE: {rmse_train:.4f}, MAE: {mae_train:.4f}"
 #Test R²: 0.1204, RMSE: 175.0872, MAE: 125.4282
 #Train R²: 0.1282, RMSE: 175.2590, MAE: 126.6682
 ######################################
+
+#Identify which PSQ items contribute most to the model's predictions
+importance_dict = xgb_final.get_booster().get_score(importance_type='gain')
+print(importance_dict)\
+#{'PSQ_Q1': 308126.53125, 'PSQ_Q2': 452599.65625, 'PSQ_Q3': 584232.5625, 'PSQ_Q4': 895941.5, 'PSQ_Q5': 1826767.875, 'PSQ_Q6': 3901129.75, 'PSQ_Q7': 905457.8125, 
+#'PSQ_Q8': 261159.953125, 'PSQ_Q9': 454481.75, 'PSQ_Q10': 207550.75, 'PSQ_Q11': 255098.796875, 'PSQ_Q12': 455612.1875, 'PSQ_Q13': 891689.0, 'PSQ_Q14': 451924.65625, 'visit': 345485.53125}
+#############################################
