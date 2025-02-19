@@ -1,0 +1,56 @@
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as pd
+import numpy as np
+
+# Updated feature importance values
+updated_importance_dict = {
+    'PSQ_Q1': 308126.53125, 'PSQ_Q2': 452599.65625, 'PSQ_Q3': 584232.5625, 'PSQ_Q4': 895941.5, 
+    'PSQ_Q5': 1826767.875, 'PSQ_Q6': 3901129.75, 'PSQ_Q7': 905457.8125, 'PSQ_Q8': 261159.953125, 
+    'PSQ_Q9': 454481.75, 'PSQ_Q10': 207550.75, 'PSQ_Q11': 255098.796875, 'PSQ_Q12': 455612.1875, 
+    'PSQ_Q13': 891689.0, 'PSQ_Q14': 451924.65625, 'visit': 345485.53125
+}
+
+# Normalize feature importance values so they sum to 1
+total_importance = sum(updated_importance_dict.values())
+normalized_importance_dict = {k: v / total_importance for k, v in updated_importance_dict.items()}
+
+# Define PSQ item labels
+psq_labels = {
+    "PSQ_Q1": "When I am with my child, I use a screen-based device.",
+    "PSQ_Q2": "I try to limit how much I use a screen-based device when I am with my child.",
+    "PSQ_Q3": "Our family often watches a screen during meals.",
+    "PSQ_Q4": "Family members are allowed to use screen-based devices during meals.",
+    "PSQ_Q5": "My child falls asleep while using a screen-based device.",
+    "PSQ_Q6": "A screen-based device is usually playing in the room when my child falls asleep.",
+    "PSQ_Q7": "My child has access to a mobile screen-based device in bed.",
+    "PSQ_Q8": "I offer screen time to my child as a reward for good behavior.",
+    "PSQ_Q9": "I take away screen time from my child as a punishment for bad behavior.",
+    "PSQ_Q10": "I keep track of my child's screen time during the week.",
+    "PSQ_Q11": "I keep track of my child's screen time during the weekend.",
+    "PSQ_Q12": "I limit my child's screen time during the week.",
+    "PSQ_Q13": "I limit my child's screen time during the weekend.",
+    "PSQ_Q14": "I encourage my child to do activities other than screen time.",
+    "visit": "Study Visit"
+}
+
+# Convert dictionary to DataFrame
+importance_df = pd.DataFrame.from_dict(normalized_importance_dict, orient='index', columns=['Normalized Gain']).reset_index()
+importance_df = importance_df.rename(columns={'index': 'Feature'})
+
+# Map feature names to full descriptions
+importance_df['Feature Description'] = importance_df['Feature'].map(psq_labels)
+
+# Sort by normalized importance (descending order)
+importance_df = importance_df.sort_values(by='Normalized Gain', ascending=False)
+
+# Plot
+plt.figure(figsize=(10, 8))
+sns.barplot(x='Normalized Gain', y='Feature Description', data=importance_df, palette='viridis')
+
+plt.title("Feature Importance (XGBoost - Normalized Gain)")
+plt.xlabel("Importance (Proportion of Total)")
+plt.ylabel("Feature")
+
+# Display plot
+plt.show()
